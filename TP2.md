@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Cours** | Introduction au Cloud (L3 SI RIST & BDGL) |
-| **Binôme** | [À COMPLÉTER : NOM Prénom 1, NOM Prénom 2] |
+| **Binôme** | KARAMOKO ISSIAKA, SANOGO DOUTI, DAHOUE MAMADOU|
 | **Date** | 26/10/2026 |
 | **Environnement** | VM `ubuntu-srv` (Ubuntu Server sous VirtualBox), utilisateur `etudiant` |
 | **Image publiée** | https://hub.docker.com/r/issiaka01/api-fil-rouge |
