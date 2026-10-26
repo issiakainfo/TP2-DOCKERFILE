@@ -22,13 +22,8 @@ sudo usermod -aG docker $USER
 docker --version
 ```
 
-| Commande | Rôle |
-|---|---|
-| `apt install -y docker.io` | Installe Docker. |
-| `systemctl enable --now docker` | Démarre Docker maintenant et à chaque démarrage de la VM. |
-| `usermod -aG docker $USER` | Ajoute l'utilisateur au groupe `docker` pour utiliser Docker sans `sudo` (reconnexion nécessaire). |
 
-> **[À COMPLÉTER]** Résultat de `docker --version` (capture ou copier-coller).
+> ** `docker --version` 29.1.3, build 29.1.3-0ubuntu4.1.
 
 ### A2. Premier conteneur : `hello-world`
 
@@ -38,11 +33,6 @@ time docker run --rm hello-world
 
 ![hello-world et temps d'exécution](img/a2-hello-world-time.png)
 
-Le message affiché décrit ce qui s'est passé :
-1. le client Docker contacte le démon Docker ;
-2. le démon télécharge l'image `hello-world` depuis Docker Hub (si elle est absente en local) ;
-3. le démon crée un conteneur à partir de cette image et l'exécute ;
-4. la sortie est renvoyée au terminal.
 
 Temps mesuré : **`real` = 1,421 s** (`user` = 0,016 s, `sys` = 0,100 s). L'option `--rm` supprime le conteneur dès qu'il se termine.
 
@@ -54,13 +44,6 @@ docker ps
 curl http://localhost:8080
 ```
 
-| Option | Rôle |
-|---|---|
-| `-d` | Exécute le conteneur en arrière-plan. |
-| `--name web` | Donne le nom `web` au conteneur. |
-| `-p 8080:80` | Relie le port 8080 de la VM au port 80 du conteneur. |
-| `nginx` | Image utilisée. |
-
 > **[À COMPLÉTER]** Capture de `docker ps` (conteneur `web` en état `Up`) et de `curl http://localhost:8080` (page « Welcome to nginx! »).
 
 ### A4. Inspection du conteneur
@@ -71,13 +54,6 @@ docker logs web      # journaux du conteneur
 docker exec -it web bash   # shell dans le conteneur
 docker stats --no-stream   # consommation de ressources
 ```
-
-| Commande | Rôle |
-|---|---|
-| `docker ps` | Liste les conteneurs en cours d'exécution (`-a` pour inclure les arrêtés). |
-| `docker logs web` | Affiche les journaux (requêtes reçues par Nginx). |
-| `docker exec -it web bash` | Ouvre un shell dans un conteneur déjà lancé. |
-| `docker stats --no-stream` | Affiche CPU, mémoire, réseau et disque en un instantané. |
 
 > **[À COMPLÉTER]** Capture de `docker logs web`.
 
@@ -103,9 +79,9 @@ Les tailles d'images proviennent de la commande `docker images` (voir la capture
 
 | Critère | Conteneur (Nginx) | Machine virtuelle (`ubuntu-srv`) |
 |---|---|---|
-| Taille sur disque | Image `nginx` : **243 MB** (66,8 MB de contenu compressé) | [À COMPLÉTER : taille du disque de la VM, via VirtualBox ou `df -h`] |
-| Démarrage | Environ **1,4 s** (mesuré avec `hello-world`, image déjà en local) | [À COMPLÉTER : temps de démarrage de la VM] |
-| Mémoire | **21,18 MiB** | [À COMPLÉTER : RAM allouée à la VM] (la VM voit 2,886 GiB au total) |
+| Taille sur disque | Image `nginx` : **243 MB** (66,8 MB de contenu compressé) | 25 GO|
+| Démarrage | Environ **1,4 s** (mesuré avec `hello-world`, image déjà en local) | 3 Minutes |
+| Mémoire | **21,18 MiB** |2,9 GiB  |
 | Système d'exploitation | Aucun noyau propre, il utilise celui de l'hôte | Système complet avec son propre noyau |
 | Isolation | Par processus (namespaces et cgroups) | Complète, via l'hyperviseur |
 
@@ -163,20 +139,6 @@ EXPOSE 5000
 CMD ["python", "app.py"]
 ```
 
-| Instruction | Rôle |
-|---|---|
-| `FROM python:3.12-slim` | Image de base : Python 3.12 sur un Linux allégé (version `slim`, plus petite). |
-| `WORKDIR /app` | Dossier de travail dans le conteneur. |
-| `COPY requirements.txt .` | Copie la liste des dépendances en premier. |
-| `RUN pip install --no-cache-dir -r requirements.txt` | Installe Flask pendant la construction ; `--no-cache-dir` réduit la taille de l'image. |
-| `COPY . .` | Copie le code de l'API dans l'image. |
-| `EXPOSE 5000` | Documente le port utilisé (ne publie pas le port à lui seul). |
-| `CMD ["python", "app.py"]` | Commande exécutée au démarrage du conteneur. |
-
-**Pourquoi copier `requirements.txt` avant le reste du code ?** Chaque instruction crée une couche mise en cache. Si seul `app.py` change, Docker réutilise la couche des dépendances et ne réinstalle pas Flask, ce qui accélère les constructions suivantes.
-
-**`RUN` ou `CMD` ?** `RUN` s'exécute une seule fois, à la construction de l'image. `CMD` s'exécute à chaque démarrage d'un conteneur.
-
 ### B3. Construction de l'image
 
 ```bash
@@ -186,9 +148,6 @@ docker build -t api-fil-rouge:1.0 .
 
 ![docker build](img/b2-build.png)
 
-Le build se déroule en 7 étapes, une par instruction du Dockerfile. Flask et ses dépendances (Werkzeug, Jinja2, click, itsdangerous, blinker, MarkupSafe) sont installés à l'étape 4. Il se termine par `Successfully built 18de320f18ec` puis `Successfully tagged api-fil-rouge:1.0`.
-
-Les deux avertissements en rouge sont sans gravité : pip signale qu'il s'exécute en tant que `root` (normal dans un conteneur de construction) et qu'une nouvelle version de pip existe.
 
 ### B4. Lancement et test
 
@@ -209,9 +168,6 @@ Les journaux du conteneur confirment le fonctionnement :
 
 ![Journaux du conteneur api](img/b4-logs.png)
 
-- Flask écoute sur toutes les adresses (`0.0.0.0`) : `127.0.0.1:5000` et `172.17.0.2:5000`, cette dernière étant l'adresse du conteneur sur le réseau interne de Docker.
-- La requête `GET / HTTP/1.1` a reçu le code **200**.
-- L'avertissement « development server » est normal : Flask intégré convient au développement, pas à la production, où l'on utiliserait un serveur WSGI comme Gunicorn.
 
 ### B5. Publication sur Docker Hub
 
@@ -235,8 +191,6 @@ docker images
 docker push issiaka01/api-fil-rouge:1.0
 ```
 
-`docker tag` ne copie rien : il ajoute un second nom à la même image. Un nom publiable sur Docker Hub doit commencer par l'identifiant du compte (`issiaka01/`).
-
 ![docker images et docker push](img/b6-images-push.png)
 
 Lecture de la capture :
@@ -246,15 +200,8 @@ Lecture de la capture :
 
 **Lien de l'image publiée :** https://hub.docker.com/r/issiaka01/api-fil-rouge
 
-Pour la récupérer et la lancer depuis n'importe quelle machine disposant de Docker :
-```bash
-docker run -d -p 5000:5000 issiaka01/api-fil-rouge:1.0
-```
-
 ---
 
 ## Conclusion
 
 Docker permet d'empaqueter une application avec ses dépendances dans une image portable, qui s'exécute de la même façon sur toute machine disposant de Docker. Comparé à une machine virtuelle, un conteneur est plus léger (quelques dizaines de Mo de mémoire), démarre en environ une seconde et se partage facilement via un registre comme Docker Hub. En contrepartie, il partage le noyau de l'hôte, donc son isolation est moins forte.
-
-Le Dockerfile rend la construction de l'image reproductible, et l'ordre de ses instructions (dépendances avant le code) permet de tirer parti du cache pour accélérer les constructions.
